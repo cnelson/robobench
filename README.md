@@ -16,14 +16,14 @@ If there isn't one, and you write one for your platform, please submit a PR!
 
 ### Manual install
 
-Install each of the following dependencies 
+Install each of the following dependencies
 
 #### OpenCV
 
 [The Installation Guide for your platform](http://docs.opencv.org/2.4/doc/tutorials/introduction/table_of_content_introduction/table_of_content_introduction.html)
 
-#### Numpy 
-[Building and installing NumPy](http://docs.scipy.org/doc/numpy-1.8.1/user/install.html) 
+#### Numpy
+[Building and installing NumPy](http://docs.scipy.org/doc/numpy-1.8.1/user/install.html)
 
 #### PIL
 This was tested with old school PIL, but pillow and other dropins should work
@@ -41,31 +41,39 @@ Use pip: pip install click
 
 ## Usage
 
-The segmenter provides full help.  Run with --help 
+The segmenter provides full help.  Run with --help
 
-    usage: car_segmenter.py [-h] [--no-lensfun] [--crop x1 y1 x2 y2]
-                            [--output OUTPUT] [--quiet] [-y]
-                            image [image ...]
+  usage: car_segmenter.py [-h] [--no-lensfun] [--crop x1 y1 x2 y2]
+                          [--output OUTPUT] [--detect [{lame_edge_contour}]]
+                          [--quiet] [-y]
+                          image [image ...]
 
-    Identify and extract images of train cars from a given set of images.
+  Identify and extract images of train cars from a given set of images.
 
-    positional arguments:
-      image                 The images to process, if you provide a unix-style
-                            glob it will be expanded.
+  positional arguments:
+    image                 The images to process, if you provide a unix-style
+                          glob it will be expanded.
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      --no-lensfun          Don't undistort the images with the Lensfun database.
-      --crop x1 y1 x2 y2    Defines the region containing the train. If not
-                            provided, you will be prompted to select a region.
-      --output OUTPUT, -o OUTPUT
-                            A directory to store the segemnted images. It must
-                            exist and be writable.
-      --quiet, -q           Don't display images as they are processed.
-      -y                    Overwrite exist images in OUTPUT directory.
+  optional arguments:
+    -h, --help            show this help message and exit
+    --no-lensfun          Don't undistort the images with the Lensfun database.
+    --crop x1 y1 x2 y2    Defines the region containing the train. If not
+                          provided, you will be prompted to select a region.
+    --output OUTPUT, -o OUTPUT
+                          A directory to store the segemnted images. It must
+                          exist and be writable.
+    --detect [{lame_edge_contour}], -d [{lame_edge_contour}]
+                          Only display/output images that contain graffiti
+                          according to the selected detector
+    --quiet, -q           Don't display images as they are processed.
+    -y                    Overwrite exist images in OUTPUT directory.
 
 ## Examples
 
 Extract cars from the sample2 dataset and store the images in /tmp:
 
     ./car_segmenter.py _sample_data/sample2/*.jpg --crop 680 952 3378 1592 -o /tmp
+
+Find graffiti in the sample2 dataset and don't store images
+
+    ./car_segmenter.py _sample_data/sample2/*.jpg --crop 680 952 3378 1592 --detect
