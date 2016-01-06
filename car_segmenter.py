@@ -20,6 +20,8 @@ import click
 # cv
 import cv2
 
+import detectors
+
 WINDOW_NAME = 'Robobench'
 
 def _open(filename, undist_coords=None):
@@ -325,6 +327,15 @@ if __name__ == "__main__":
         help='A directory to store the segemnted images. It must exist and be writable.'
     )
     parser.add_argument(
+        '--detect',
+        '-d',
+        nargs='?',
+        const=detectors.__all__[0],
+        choices=detectors.__all__,
+        help='Only display/output images that contain graffiti according to the selected detector'
+    )
+
+    parser.add_argument(
         '--quiet',
         '-q',
         default=False,
@@ -339,6 +350,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    if args.detect:
+        args.detect = getattr(detectors, args.detect)
 
     if args.quiet and args.output is None:
         parser.error("You should specify output with --quiet/-q, otherwise, what's the point?")
@@ -462,6 +476,8 @@ if __name__ == "__main__":
 
             # biggest gaps first
             results = sorted(results, key=lambda x: x[2], reverse=True)
+            train_car = None
+            has_graffiti = False
 
             # is it train car sized?
             # TODO: Learn this size automatically, or have the user specify during interactive crop
@@ -471,7 +487,19 @@ if __name__ == "__main__":
                 x1 = int(results[0][0] * (cw/(sw+1.0)))
                 x2 = int(results[0][1] * (cw/(sw+1.0)))
 
-                if args.output:
+                train_car = cropimg[0:ch, x1:x2]
+
+                # if they asked us, check for graffiti
+                if args.detect:
+                    rects = args.detect(train_car)
+                    has_graffiti = bool(rects)
+
+                # did they ask us to save image, and possibly only ones with graffiti?
+                save_image = args.output
+                if save_image:
+                    save_image = has_graffiti = bool(rects)
+
+                if save_image:
                     target = os.path.join(args.output, os.path.basename(filename))
 
                     if os.path.exists(target) and not args.y:
@@ -480,11 +508,28 @@ if __name__ == "__main__":
                             '{0} already exists.  Use -y to overwrite existing files'.format(target)
                         )
 
-                    cv2.imwrite(target, cropimg[0:ch, x1:x2])
+                    cv2.imwrite(target, train_car)
 
-                cv2.line(cropimg, (x1, 0), (x1, ch), (0, 0, 255), 3)
-                cv2.line(cropimg, (x2, 0), (x2, ch), (0, 0, 255), 3)
+                # if we are detecting, and have graffiti, then highlight that!
+                if args.detect:
+                    for rect in rects:
+                        cv2.rectangle(train_car, rect[0], rect[1], (0, 255, 0), 2)
+                else:
+                    # if we aren't detecting graffiti, highlight the segmented car
+                    cv2.rectangle(cropimg, (x1, 20), (x2, ch-10), (0, 0, 255), 10)
 
-            if not args.quiet:
-                cv2.imshow(WINDOW_NAME, _scale(cropimg, width=800)[0])
+
+            # skip the rest if they told us to shutup
+            if args.quiet:
+                continue
+
+            out = None
+            if args.detect:
+                if has_graffiti:
+                    out = _scale(train_car, width=1280)[0]
+            else:
+                out = _scale(fullimg, width=1280)[0]
+
+            if out is not None:
+                cv2.imshow(WINDOW_NAME, out)
                 cv2.waitKey(10)
